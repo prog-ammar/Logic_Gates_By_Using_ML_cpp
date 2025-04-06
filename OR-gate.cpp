@@ -11,7 +11,7 @@ int train_or[][3]=
     {0,0,0},
     {0,1,1},
     {1,0,1},
-    {1,1,1}
+    {1,1,0}
 };
 
 int size_train=sizeof(train_or)/sizeof(train_or[0]);
@@ -57,12 +57,18 @@ int main()
        float db=0.0f;
        for(int j=0;j<size_train;j++)
        {
-        float y=w1*train_or[j][0]+w2*train_or[j][1]+b;
+        float x1=train_or[j][0];
+        float x2=train_or[j][1];
+        float y=w1*x1+w2*x2+b;
+
         float sigmoid_deriv=sigmoid(y)*(1.0f-sigmoid(y));
-        dw1+=-2.0f*train_or[j][0]*(train_or[j][2]-sigmoid(y))*sigmoid_deriv;
-        dw2+=-2.0f*train_or[j][1]*(train_or[j][2]-sigmoid(y))*sigmoid_deriv;
+
+        dw1+=-2.0f*x1*(train_or[j][2]-sigmoid(y))*sigmoid_deriv;
+        dw2+=-2.0f*x2*(train_or[j][2]-sigmoid(y))*sigmoid_deriv;
         db+=-2.0f*(train_or[j][2]-sigmoid(y))*sigmoid_deriv;
+        
        }
+
        dw1/=size_train;
        dw2/=size_train;
        db/=size_train;
