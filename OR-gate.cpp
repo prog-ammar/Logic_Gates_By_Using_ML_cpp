@@ -5,6 +5,8 @@
 
 using namespace std;
 
+//This Program Can give correct answers for all the gates excluding xor,xnor because they need 3 neurons to made
+
 
 int train_or[][3]=
 {
