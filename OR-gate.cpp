@@ -1,6 +1,7 @@
 #include<iostream>
 #include<time.h>
 #include<math.h>
+#include<iomanip>
 
 using namespace std;
 
@@ -75,7 +76,7 @@ int main()
     cout<<"\nResults : "<<endl;
     for(int i=0;i<size_train;i++)
     {
-        cout<<"Expected : "<<train_or[i][2]<<" | Actual : "<<sigmoid(w1*train_or[i][0]+w2*train_or[i][1]+b)<<endl;;
+        cout<<"Expected : "<<train_or[i][2]<<" | Actual : "<<fixed<<setprecision(3)<<sigmoid(w1*train_or[i][0]+w2*train_or[i][1]+b)<<endl;
     }
 
 }
