@@ -11,7 +11,7 @@ int train_or[][3]=
     {0,0,0},
     {0,1,1},
     {1,0,1},
-    {1,1,0}
+    {1,1,1}
 };
 
 int size_train=sizeof(train_or)/sizeof(train_or[0]);
@@ -50,7 +50,7 @@ int main()
 
     float learn_rate=1e-1;
 
-    for(int i=0;i<1600000;i++)
+    for(int i=0;i<100000;i++)
     {
        float dw1=0.0f;
        float dw2=0.0f;
