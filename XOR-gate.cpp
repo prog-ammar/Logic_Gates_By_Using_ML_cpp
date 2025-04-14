@@ -3,6 +3,8 @@
 
 using namespace std;
 
+//Change train_xor it can generate every gate 
+
 int train_xor[][3]=
 {
     {0,0,0},
