@@ -9,5 +9,6 @@ class Matrix
     Matrix(int rows,int cols);
     void init_rand();
     void set_fill(int n);
-    friend ostream& operator<<(ostream& output,Matrix matrix);
-}
+    friend ostream& operator<<(ostream& output,const Matrix& matrix);
+    friend Matrix operator+(const Matrix& m1,const Matrix& m2);
+};
