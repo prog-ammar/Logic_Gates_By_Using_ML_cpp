@@ -66,3 +66,18 @@ Matrix operator+(const Matrix& m1,const Matrix& m2)
     }
     return Matrix();
 }
+
+Matrix operator*(const Matrix& m1,const Matrix& m2)
+{
+   if(m1.cols==m2.rows)
+   {
+    Matrix temp(m1.rows,m2.cols);
+    for(int i=0;i<m1.rows;i++)
+    {
+        for(int j=0;j<m2.cols;j++)
+        {
+            temp.m[i][j]=m1.m[i][j]+m2.m[j][i];
+        }
+    }
+   }
+}
