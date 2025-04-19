@@ -4,6 +4,7 @@
 using namespace std;
 
 //Change train_xor it can generate every gate 
+//it first train OR NAND AND and then the inputs it send to mimic output gate
 
 int train_xor[][3]=
 {
