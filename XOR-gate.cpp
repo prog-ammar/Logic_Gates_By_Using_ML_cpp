@@ -4,6 +4,7 @@
 using namespace std;
 
 //Change train_xor it can generate every gate 
+//Train Xor on nand or output
 
 int train_xor[][3]=
 {
@@ -150,6 +151,34 @@ int main()
    Weights nand=training(w1,w2,b,train_nand);
    Weights and1=training_and(w1,w2,b,train_and,or1,nand);
    
+
+   cout<<"OR NEURON\n";
+   for(int i=0;i<2;i++)
+   {
+     for(int j=0;j<2;j++)
+     {
+       cout<<i<<" | "<<j<<" = "<<sigmoid(or1.w1*i+or1.w2*j+or1.b)<<endl;
+     }
+   }
+
+   cout<<"\nNAND NEURON\n";
+   for(int i=0;i<2;i++)
+   {
+     for(int j=0;j<2;j++)
+     {
+       cout<<i<<" | "<<j<<" = "<<sigmoid(nand.w1*i+nand.w2*j+nand.b)<<endl;
+     }
+   }
+
+   cout<<"\nAND NEURON\n";
+   for(int i=0;i<2;i++)
+   {
+     for(int j=0;j<2;j++)
+     {
+       cout<<i<<" & "<<j<<" = "<<sigmoid(and1.w1*i+and1.w2*j+and1.b)<<endl;
+     }
+   }
+
    cout<<"\nResults : "<<endl;
    
     for(int i=0;i<size_train;i++)
