@@ -1,7 +1,10 @@
-#include "matrix.h"
 #include<iostream>
+#include<iomanip>
+#include<math.h>
 
 using namespace std;
+
+#include "matrix.h"
 
 Matrix::Matrix(int rows=0,int cols=0)
 {
@@ -14,7 +17,7 @@ Matrix::Matrix(int rows=0,int cols=0)
     }
 }
 
-Matrix::Matrix(int rows,int cols,double* ptr)
+Matrix::Matrix(int rows,int cols,double** ptr)
 {
     this->rows=rows;
     this->cols=cols;
@@ -25,13 +28,11 @@ Matrix::Matrix(int rows,int cols,double* ptr)
     }
     if(ptr!=nullptr)
     {
-        int max_size=this->rows*this->cols;
-        int l=0;
         for(int i=0;i<this->rows;i++)
         {
             for(int j=0;j<this->cols;j++)
             {
-                m[i][j]=ptr[l++];
+                m[i][j]=ptr[i][j];
             }
         }
     }
@@ -60,6 +61,18 @@ void Matrix::set_fill(int n)
 }
 
 
+void Matrix::sigmoid()
+{
+    for(int i=0;i<rows;i++)
+    {
+        for(int j=0;j<cols;j++)
+        {
+            m[i][j]=1.0f/(1.0f+expf(-m[i][j]));
+        }
+    }
+}
+
+
 ostream& operator<<(ostream& output,const Matrix& matrix)
 {
     for(int i=0;i<matrix.rows;i++)
@@ -67,12 +80,15 @@ ostream& operator<<(ostream& output,const Matrix& matrix)
         output<<"\n[ ";
         for(int j=0;j<matrix.cols;j++)
         {
-             output<<matrix.m[i][j]<<" ";
+            output<<matrix.m[i][j]<<" ";
         }
-        output<<"]\n";
+        output<<"]";
     }
+    output<<"\n";
     return output;
 }
+
+
 
 Matrix operator+(const Matrix& m1,const Matrix& m2)
 {
