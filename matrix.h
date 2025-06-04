@@ -1,3 +1,7 @@
+#include <iostream>
+
+using namespace std;
+
 class Matrix
 {
     private:
@@ -7,9 +11,10 @@ class Matrix
 
     public:
     Matrix(int rows,int cols);
-    Matrix(int rows,int cols,double* ptr);
+    Matrix(int rows,int cols,double** ptr);
     void init_rand(int low,int high);
     void set_fill(int n);
+    void sigmoid();
     friend ostream& operator<<(ostream& output,const Matrix& matrix);
     friend Matrix operator+(const Matrix& m1,const Matrix& m2);
     friend Matrix operator*(const Matrix& m1,const Matrix& m2);
