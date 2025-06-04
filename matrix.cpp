@@ -154,14 +154,17 @@ double Matrix::matrix_at(int i,int j)
 
 NeuralNetwork::NeuralNetwork(int layers,Matrix input,Matrix output)
 {
-    this->input=new Matrix(input);
-    this->output=new Matrix(output);
+    this->input=new Matrix;
+    this->output=new Matrix;
+    *this->input=input;
+    *this->output=output;
     this->layers=layers;
 }
 
 
 Xor::Xor()
 {
+    a[0]=Matrix(1,2);
     w[0]=Matrix(2,2);
     w[1]=Matrix(2,1);
     b[0]=Matrix(1,2);
@@ -178,11 +181,11 @@ Xor::Xor()
 
 void forward_xor(Xor& xr)
 {
-    xr.a[1]=xr.w[0]*xr.a[0];
+    xr.a[1]=xr.a[0]*xr.w[0];
     xr.a[1]=xr.a[1]+xr.b[0];
     xr.a[1].sigmoid();
 
-    xr.a[2]=xr.w[1]*xr.a[1];
+    xr.a[2]=xr.a[1]*xr.w[1];
     xr.a[2]=xr.a[2]+xr.b[1];
     xr.a[2].sigmoid();
 }
