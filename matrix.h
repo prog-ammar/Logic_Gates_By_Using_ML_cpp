@@ -30,13 +30,16 @@ class Matrix
     ~Matrix();
 };
 
-class Xor
+class Weights
 {
     public:
-    Matrix a[3];
-    Matrix w[2];
-    Matrix b[2];
-    Xor();
+    Matrix* a;
+    Matrix* w;
+    Matrix* b;
+    int layers;
+    int* sizes;
+    Weights(int layers,int size[],int l);
+    ~Weights();
 };
 
 class NeuralNetwork
@@ -45,11 +48,14 @@ class NeuralNetwork
     int layers;
     Matrix* input;
     Matrix* output;
+    Weights* xr;
+    int* sizes;
 
     public:
-    NeuralNetwork(int layers,Matrix input,Matrix output);
-    float cost(Xor& xr);
-    void train(Xor& xr);
-    Matrix get_output(Xor& xr);
+    NeuralNetwork(int layers,int size[],int l,Matrix input,Matrix output);
+    float cost();
+    void forward_xr();
+    void train();
+    Matrix get_output();
     ~NeuralNetwork();
 };
