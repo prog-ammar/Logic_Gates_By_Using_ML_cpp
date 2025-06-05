@@ -165,36 +165,118 @@ Matrix return_transpose(Matrix& x)
     return temp;
 }
 
-void NeuralNetwork::forward_xr()
+Matrix operator*(const Matrix& m1,const Matrix& m2)
 {
-    for(int i=0;i<layers-1;i++)
+   if(m1.cols==m2.rows)
+   {
+    Matrix temp(m1.rows,m2.cols);
+    temp.set_fill(0);
+    for(int i=0;i<temp.rows;i++)
     {
-        xr->a[i+1]=xr->a[i]*xr->w[i];
-        xr->a[i+1]=xr->a[i+1]+xr->b[i];
-        xr->a[i+1].sigmoid();
+        for(int j=0;j<temp.cols;j++)
+        {
+            for(int k=0;k<m1.cols;k++)
+            {
+                temp.m[i][j]+=m1.m[i][k]*m2.m[k][j];
+            }
+        }
+        
     }
-
-    // xr->a[2]=xr->a[1]*xr->w[1];
-    // xr->a[2]=xr->a[2]+xr->b[1];
-    // xr->a[2].sigmoid();
+    return temp;
+   }
+   return Matrix();
 }
 
-NeuralNetwork::NeuralNetwork(int layers,int size[],int l,Matrix input,Matrix output)
+
+ostream& operator<<(ostream& output,const Matrix& matrix)
 {
+    for(int i=0;i<matrix.rows;i++)
+    {
+        output<<"\n[ ";
+        for(int j=0;j<matrix.cols;j++)
+        {
+            output<<matrix.m[i][j]<<" ";
+        }
+        output<<"]";
+    }
+    output<<"\n";
+    return output;
+}
+
+Matrix operator+(const Matrix& m1,const Matrix& m2)
+{
+    if(m1.rows==m2.rows && m1.cols==m2.cols)
+    {
+        Matrix temp(m1.rows,m2.cols);
+        for(int i=0;i<temp.rows;i++)
+        {
+            for(int j=0;j<temp.cols;j++)
+            {
+                temp.m[i][j]=m1.m[i][j]+m2.m[i][j];
+            }
+        }
+        return temp;
+    }
+    return Matrix();
+}
+
+Matrix::~Matrix()
+{
+    if (m != nullptr)
+    {
+        for (int i = 0; i < rows; ++i)
+            delete[] m[i];
+        delete[] m;
+    }
+}
+
+
+Weights::Weights(int layers,int size[],int l)
+{
+    this->layers=layers;
     this->sizes=new int[l];
     for(int i=0;i<l;i++)
     {
         this->sizes[i]=size[i];
     }
-    this->layers=layers;
-    this->input=new Matrix;
-    this->output=new Matrix;
-    this->xr=new Weights(layers,size,l);
-    xr->init_rand(0,1);
-    *this->input=input;
-    *this->output=output;
-    
+
+    a=new Matrix[layers];
+    w=new Matrix[layers-1];
+    b=new Matrix[layers-1];
+    dw=new Matrix [layers-1];
+    db=new Matrix [layers-1];
+    da=new  Matrix [layers-1];
+
+    for(int i=0;i<layers;i++)
+    {
+        a[i]= Matrix(1,sizes[i]);
+    }
+
+    for(int i=0;i<layers-1;i++)
+    {
+        w[i]=Matrix(sizes[i],sizes[i+1]);
+        b[i]=Matrix(1,size[i+1]);
+        dw[i]=Matrix(sizes[i],sizes[i+1]);
+        db[i]=Matrix(1,sizes[i+1]);
+        da[i]=Matrix(1,sizes[i+1]);
+    }
+
+    // a[0]=Matrix(1,2);
+    // w[0]=Matrix(2,2);
+    // w[1]=Matrix(2,1);
+    // b[0]=Matrix(1,2);
+    // b[1]=Matrix(1,1);
+    // a[1]=Matrix(1,2);
+    // a[2]=Matrix(1,1);
+
+    // for(int i=0;i<2;i++)
+    // {
+    //     w[i].init_rand(0,1);
+    //     b[i].init_rand(0,1);
+    // }
 }
+
+
 
 void Weights::init_rand(int l,int h)
 {
@@ -217,6 +299,79 @@ void Weights::set_fill(int x)
     }
 
 }
+
+
+
+Weights::~Weights()
+{
+    delete []a;
+    delete []b;
+    delete []w;
+    delete []db;
+    delete []dw;
+    delete []da;
+    delete []sizes;
+}
+
+
+
+
+NeuralNetwork::NeuralNetwork(int layers,int size[],int l,Matrix input,Matrix output)
+{
+    this->sizes=new int[l];
+    for(int i=0;i<l;i++)
+    {
+        this->sizes[i]=size[i];
+    }
+    this->layers=layers;
+    this->input=new Matrix;
+    this->output=new Matrix;
+    this->xr=new Weights(layers,size,l);
+    xr->init_rand(0,1);
+    *this->input=input;
+    *this->output=output;
+    
+}
+
+
+
+
+void NeuralNetwork::forward_xr()
+{
+    for(int i=0;i<layers-1;i++)
+    {
+        xr->a[i+1]=xr->a[i]*xr->w[i];
+        xr->a[i+1]=xr->a[i+1]+xr->b[i];
+        xr->a[i+1].sigmoid();
+    }
+
+    // xr->a[2]=xr->a[1]*xr->w[1];
+    // xr->a[2]=xr->a[2]+xr->b[1];
+    // xr->a[2].sigmoid();
+}
+
+
+
+float NeuralNetwork::cost()
+{
+    float cost=0;
+    for(int i=0;i<input->get_rows();i++)
+    {
+        Matrix x=input->get_row(i);
+        Matrix y=output->get_row(i);
+
+        xr->a[0]=Matrix(x);
+        forward_xr();
+        for(int j=0;j<output->get_cols();j++)
+        {
+            float d=xr->a[layers-1].matrix_at(0,j)-y.matrix_at(0,j);
+            cost+=d*d;
+        }
+    }
+    return cost/input->get_rows();
+}
+
+
 
 void NeuralNetwork::train()
 {
@@ -321,83 +476,6 @@ void NeuralNetwork::train()
 }
 
 
-Weights::Weights(int layers,int size[],int l)
-{
-    this->layers=layers;
-    this->sizes=new int[l];
-    for(int i=0;i<l;i++)
-    {
-        this->sizes[i]=size[i];
-    }
-
-    a=new Matrix[layers];
-    w=new Matrix[layers-1];
-    b=new Matrix[layers-1];
-    dw=new Matrix [layers-1];
-    db=new Matrix [layers-1];
-    da=new  Matrix [layers-1];
-
-    for(int i=0;i<layers;i++)
-    {
-        a[i]= Matrix(1,sizes[i]);
-    }
-
-    for(int i=0;i<layers-1;i++)
-    {
-        w[i]=Matrix(sizes[i],sizes[i+1]);
-        b[i]=Matrix(1,size[i+1]);
-        dw[i]=Matrix(sizes[i],sizes[i+1]);
-        db[i]=Matrix(1,sizes[i+1]);
-        da[i]=Matrix(1,sizes[i+1]);
-    }
-
-    // a[0]=Matrix(1,2);
-    // w[0]=Matrix(2,2);
-    // w[1]=Matrix(2,1);
-    // b[0]=Matrix(1,2);
-    // b[1]=Matrix(1,1);
-    // a[1]=Matrix(1,2);
-    // a[2]=Matrix(1,1);
-
-    // for(int i=0;i<2;i++)
-    // {
-    //     w[i].init_rand(0,1);
-    //     b[i].init_rand(0,1);
-    // }
-}
-
-Weights::~Weights()
-{
-    delete []a;
-    delete []b;
-    delete []w;
-    delete []db;
-    delete []dw;
-    delete []da;
-    delete []sizes;
-}
-
-
-
-float NeuralNetwork::cost()
-{
-    float cost=0;
-    for(int i=0;i<input->get_rows();i++)
-    {
-        Matrix x=input->get_row(i);
-        Matrix y=output->get_row(i);
-
-        xr->a[0]=Matrix(x);
-        forward_xr();
-        for(int j=0;j<output->get_cols();j++)
-        {
-            float d=xr->a[layers-1].matrix_at(0,j)-y.matrix_at(0,j);
-            cost+=d*d;
-        }
-    }
-    return cost/input->get_rows();
-}
-
 Matrix NeuralNetwork::get_output()
 {
    Matrix result(output->get_rows(),output->get_cols());
@@ -415,71 +493,9 @@ NeuralNetwork::~NeuralNetwork()
 {
     delete input;
     delete output;
-}
-
-Matrix::~Matrix()
-{
-    if (m != nullptr)
-    {
-        for (int i = 0; i < rows; ++i)
-            delete[] m[i];
-        delete[] m;
-    }
-}
-
-
-ostream& operator<<(ostream& output,const Matrix& matrix)
-{
-    for(int i=0;i<matrix.rows;i++)
-    {
-        output<<"\n[ ";
-        for(int j=0;j<matrix.cols;j++)
-        {
-            output<<matrix.m[i][j]<<" ";
-        }
-        output<<"]";
-    }
-    output<<"\n";
-    return output;
+    delete xr;
+    delete[] sizes;
 }
 
 
 
-Matrix operator+(const Matrix& m1,const Matrix& m2)
-{
-    if(m1.rows==m2.rows && m1.cols==m2.cols)
-    {
-        Matrix temp(m1.rows,m2.cols);
-        for(int i=0;i<temp.rows;i++)
-        {
-            for(int j=0;j<temp.cols;j++)
-            {
-                temp.m[i][j]=m1.m[i][j]+m2.m[i][j];
-            }
-        }
-        return temp;
-    }
-    return Matrix();
-}
-
-Matrix operator*(const Matrix& m1,const Matrix& m2)
-{
-   if(m1.cols==m2.rows)
-   {
-    Matrix temp(m1.rows,m2.cols);
-    temp.set_fill(0);
-    for(int i=0;i<temp.rows;i++)
-    {
-        for(int j=0;j<temp.cols;j++)
-        {
-            for(int k=0;k<m1.cols;k++)
-            {
-                temp.m[i][j]+=m1.m[i][k]*m2.m[k][j];
-            }
-        }
-        
-    }
-    return temp;
-   }
-   return Matrix();
-}
