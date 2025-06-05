@@ -5,12 +5,50 @@ using namespace std;
 
 int main()
 {
-  double input[]={0,0,0,1,1,0,1,1};
-  double output[]={1,0,0,1};
-  int size[]={2,2,1};
-  NeuralNetwork nn(3,size,3,Matrix(4,2,input),Matrix(4,1,output));
-  nn.train();
-  Matrix s=nn.get_output();
-  cout<<"\nResult : ";
-  cout<<s;
+  // double input[]={0,0,0,1,1,0,1,1};
+  // double output[]={0,1,1,0};
+  // int size[]={2,2,1};
+  // int s=sizeof(size)/sizeof(size[0]);
+  // NeuralNetwork nn(3,size,s,Matrix(4,2,input),Matrix(4,1,output));
+  // nn.train();
+  // Matrix y=nn.get_output();
+  // cout<<"\nResult : ";
+  // cout<<y;
+
+   double input[] = {
+        0, 0, 0,
+        0, 0, 1,
+        0, 1, 0,
+        0, 1, 1,
+        1, 0, 0,
+        1, 0, 1,
+        1, 1, 0,
+        1, 1, 1
+    };
+
+    double output[] = {
+        0, 
+        1, 
+        1, 
+        0, 
+        1, 
+        0, 
+        0, 
+        1  
+    };
+
+    // Define layer sizes: 3 inputs → 4 hidden → 1 output
+    int size[] = {3, 4, 1};
+    int s = sizeof(size) / sizeof(size[0]);
+
+    // Create network
+    NeuralNetwork nn(3, size, s, Matrix(8, 3, input), Matrix(8, 1, output));
+    
+    // Train network
+    nn.train();
+    
+    // Display output
+    Matrix y = nn.get_output();
+    std::cout << "\nResult : ";
+    std::cout << y;
 }

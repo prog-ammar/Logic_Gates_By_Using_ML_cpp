@@ -41,6 +41,8 @@ class Weights
     Matrix* dw;
     int layers;
     int* sizes;
+
+    
     Weights(int layers,int size[],int l);
     void init_rand(int l,int h);
     void set_fill(int x);

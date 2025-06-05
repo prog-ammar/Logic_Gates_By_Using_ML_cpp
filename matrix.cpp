@@ -190,6 +190,7 @@ Matrix operator*(const Matrix& m1,const Matrix& m2)
 
 ostream& operator<<(ostream& output,const Matrix& matrix)
 {
+    output<<fixed;
     for(int i=0;i<matrix.rows;i++)
     {
         output<<"\n[ ";
