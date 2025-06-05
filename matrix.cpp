@@ -395,7 +395,8 @@ void NeuralNetwork::train()
             xr->a[0]=x;
             forward_xr();
 
-            xr->da[layers-2].matrix_at(0,0)=2.0f * (xr->a[layers-1].matrix_at(0, 0) - y.matrix_at(0, 0));
+            for(int j=0;j<output->get_cols();j++)
+            xr->da[layers-2].matrix_at(0,j)=2.0f * (xr->a[layers-1].matrix_at(0, j) - y.matrix_at(0, j));
    
             for(int layer=layers-2;layer>=0;layer--)
             {
@@ -480,12 +481,13 @@ void NeuralNetwork::train()
 Matrix NeuralNetwork::get_output()
 {
    Matrix result(output->get_rows(),output->get_cols());
-   for(int i=0;i<input->get_rows();i++)
+   for(int i=0;i<output->get_rows();i++)
    {
     Matrix input_row=input->get_row(i);
     xr->a[0]=input_row;
     forward_xr();
-    result.matrix_at(i,0)=xr->a[layers-1].matrix_at(0,0);
+    for(int j=0;j<output->get_cols();j++)
+    result.matrix_at(i,j)=xr->a[layers-1].matrix_at(0,j);
    }
    return result;
 }
