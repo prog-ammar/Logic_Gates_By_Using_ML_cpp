@@ -147,9 +147,33 @@ Matrix Matrix::get_row(int i)
    return Matrix(1,cols,p);
 }
 
-double Matrix::matrix_at(int i,int j)
+double& Matrix::matrix_at(int i,int j)
 {
     return m[i][j];
+}
+
+Matrix return_transpose(Matrix& x)
+{
+    Matrix temp(x.cols,x.rows);
+    for(int i=0;i<temp.rows;i++)
+    {
+        for(int j=0;j<temp.cols;j++)
+        {
+            temp.m[i][j]=x.m[j][i];
+        }
+    }
+    return temp;
+}
+
+void forward_xor(Xor& xr)
+{
+    xr.a[1]=xr.a[0]*xr.w[0];
+    xr.a[1]=xr.a[1]+xr.b[0];
+    xr.a[1].sigmoid();
+
+    xr.a[2]=xr.a[1]*xr.w[1];
+    xr.a[2]=xr.a[2]+xr.b[1];
+    xr.a[2].sigmoid();
 }
 
 NeuralNetwork::NeuralNetwork(int layers,Matrix input,Matrix output)
@@ -159,6 +183,129 @@ NeuralNetwork::NeuralNetwork(int layers,Matrix input,Matrix output)
     *this->input=input;
     *this->output=output;
     this->layers=layers;
+}
+
+void NeuralNetwork::train(Xor& xr)
+{
+    float learn_rate=1e-1;
+    int eps=1000;
+    for(int i=0;i<10000;i++)
+    {
+        Matrix dw[2];
+        Matrix db[2];
+        Matrix da[2];
+
+        dw[0] = Matrix(2, 2);
+        dw[1] = Matrix(2, 1);
+        db[0] = Matrix(1, 2);
+        db[1] = Matrix(1, 1);
+        da[0] = Matrix(1,2);
+        da[1] = Matrix(1,1);
+        
+        dw[0].set_fill(0);
+        dw[1].set_fill(0);
+        db[0].set_fill(0);
+        db[1].set_fill(0);
+        da[0].set_fill(0);
+        da[1].set_fill(1);
+
+        for(int i=0;i<input->get_rows();i++)
+        {
+            Matrix x=input->get_row(i);
+            Matrix y=output->get_row(i);
+
+            xr.a[0]=x;
+            forward_xor(xr);
+   
+            da[1].matrix_at(0,0)=2.0f * (xr.a[2].matrix_at(0, 0) - y.matrix_at(0, 0));
+
+            Matrix a1_transpose=return_transpose(xr.a[1]);
+            Matrix dw1_sample = a1_transpose * da[1];
+            Matrix db1_sample = da[1];
+
+            Matrix w1_transpose=return_transpose(xr.w[1]);
+            Matrix da1_pre = da[1] * w1_transpose;
+
+            for(int j=0;j<2;j++)
+            {
+                float sigmoid_value=xr.a[1].matrix_at(0,j);
+                float sigmoid_deriv= sigmoid_value*(1.0f-sigmoid_value);
+                da[0].matrix_at(0,j)=da1_pre.matrix_at(0,j)*sigmoid_deriv;
+            }
+
+            Matrix a0_transpose=return_transpose(xr.a[0]);
+            Matrix dw0_sample = a0_transpose * da[0];
+            Matrix db0_sample = da[0];
+
+
+            dw[1] = dw[1] + dw1_sample;
+            db[1] = db[1] + db1_sample;
+            dw[0] = dw[0] + dw0_sample;
+            db[0] = db[0] + db0_sample;
+
+
+        int num_samples = input->get_rows();
+        for(int i = 0; i < 2; i++) {
+            for(int j = 0; j < 2; j++) {
+                if(i < dw[0].get_rows() && j < dw[0].get_cols()) {
+                    dw[0].matrix_at(i,j) /= num_samples;
+                }
+            }
+        }
+        
+        for(int i = 0; i < 2; i++) {
+            for(int j = 0; j < 1; j++) {
+                if(i < dw[1].get_rows() && j < dw[1].get_cols()) {
+                    dw[1].matrix_at(i,j) /= num_samples;
+                }
+            }
+        }
+        
+        for(int i = 0; i < 1; i++) {
+            for(int j = 0; j < 2; j++) {
+                if(i < db[0].get_rows() && j < db[0].get_cols()) {
+                    db[0].matrix_at(i,j)/= num_samples;
+                }
+            }
+        }
+        
+        for(int i = 0; i < 1; i++) {
+            for(int j = 0; j < 1; j++) {
+                if(i < db[1].get_rows() && j < db[1].get_cols()) {
+                    db[1].matrix_at(i,j) /= num_samples;
+                }
+            }
+        }
+        
+        // Update weights and biases using gradient descent
+        // w = w - learning_rate * dw
+        // b = b - learning_rate * db
+        
+        for(int i = 0; i < 2; i++) {
+            for(int j = 0; j < 2; j++) {
+                xr.w[0].matrix_at(i,j) -= learn_rate * dw[0].matrix_at(i,j);
+            }
+        }
+        
+        for(int i = 0; i < 2; i++) {
+            for(int j = 0; j < 1; j++) {
+                xr.w[1].matrix_at(i,j) -= learn_rate * dw[1].matrix_at(i,j);
+            }
+        }
+        
+        for(int i = 0; i < 1; i++) {
+            for(int j = 0; j < 2; j++) {
+                xr.b[0].matrix_at(i,j) -= learn_rate * db[0].matrix_at(i,j);
+            }
+        }
+        
+        for(int i = 0; i < 1; i++) {
+            for(int j = 0; j < 1; j++) {
+                xr.b[1].matrix_at(i,j) -= learn_rate * db[1].matrix_at(i,j);
+            }
+        }
+        }
+    }
 }
 
 
@@ -179,16 +326,7 @@ Xor::Xor()
     }
 }
 
-void forward_xor(Xor& xr)
-{
-    xr.a[1]=xr.a[0]*xr.w[0];
-    xr.a[1]=xr.a[1]+xr.b[0];
-    xr.a[1].sigmoid();
 
-    xr.a[2]=xr.a[1]*xr.w[1];
-    xr.a[2]=xr.a[2]+xr.b[1];
-    xr.a[2].sigmoid();
-}
 
 float NeuralNetwork::cost(Xor& xr)
 {
@@ -207,6 +345,19 @@ float NeuralNetwork::cost(Xor& xr)
         }
     }
     return cost/input->get_rows();
+}
+
+Matrix NeuralNetwork::get_output(Xor& xr)
+{
+   Matrix result(4,1);
+   for(int i=0;i<input->get_rows();i++)
+   {
+    Matrix input_row=input->get_row(i);
+    xr.a[0]=input_row;
+    forward_xor(xr);
+    result.matrix_at(i,0)=xr.a[2].matrix_at(0,0);
+   }
+   return result;
 }
 
 NeuralNetwork::~NeuralNetwork()
