@@ -167,13 +167,16 @@ Matrix return_transpose(Matrix& x)
 
 void NeuralNetwork::forward_xr()
 {
-    xr->a[1]=xr->a[0]*xr->w[0];
-    xr->a[1]=xr->a[1]+xr->b[0];
-    xr->a[1].sigmoid();
+    for(int i=0;i<layers-1;i++)
+    {
+        xr->a[i+1]=xr->a[i]*xr->w[i];
+        xr->a[i+1]=xr->a[i+1]+xr->b[i];
+        xr->a[i+1].sigmoid();
+    }
 
-    xr->a[2]=xr->a[1]*xr->w[1];
-    xr->a[2]=xr->a[2]+xr->b[1];
-    xr->a[2].sigmoid();
+    // xr->a[2]=xr->a[1]*xr->w[1];
+    // xr->a[2]=xr->a[2]+xr->b[1];
+    // xr->a[2].sigmoid();
 }
 
 NeuralNetwork::NeuralNetwork(int layers,int size[],int l,Matrix input,Matrix output)
@@ -187,9 +190,32 @@ NeuralNetwork::NeuralNetwork(int layers,int size[],int l,Matrix input,Matrix out
     this->input=new Matrix;
     this->output=new Matrix;
     this->xr=new Weights(layers,size,l);
+    xr->init_rand(0,1);
     *this->input=input;
     *this->output=output;
     
+}
+
+void Weights::init_rand(int l,int h)
+{
+   for(int i=0;i<layers-1;i++)
+    {
+        w[i]=Matrix(sizes[i],sizes[i+1]);
+        w[i].init_rand(l,h);
+        b[i]=Matrix(1,sizes[i+1]);
+        b[i].init_rand(l,h);
+    }
+}
+
+void Weights::set_fill(int x)
+{
+    for(int i=0;i<layers-1;i++)
+    {
+        w[i].set_fill(x);
+        b[i].set_fill(x);
+        a[i+1].set_fill(x);
+    }
+
 }
 
 void NeuralNetwork::train()
@@ -198,120 +224,99 @@ void NeuralNetwork::train()
     int eps=1000;
     for(int i=0;i<10000;i++)
     {
-        Matrix dw[2];
-        Matrix db[2];
-        Matrix da[2];
-
-        dw[0] = Matrix(2, 2);
-        dw[1] = Matrix(2, 1);
-        db[0] = Matrix(1, 2);
-        db[1] = Matrix(1, 1);
-        da[0] = Matrix(1,2);
-        da[1] = Matrix(1,1);
-        
-        dw[0].set_fill(0);
-        dw[1].set_fill(0);
-        db[0].set_fill(0);
-        db[1].set_fill(0);
-        da[0].set_fill(0);
-        da[1].set_fill(1);
-
-        for(int i=0;i<input->get_rows();i++)
+        for(int j=0;j<layers-1;j++)
         {
-            Matrix x=input->get_row(i);
-            Matrix y=output->get_row(i);
+            xr->da[j].set_fill(0);
+            xr->db[j].set_fill(0);
+            xr->dw[j].set_fill(0);
+        }
+
+        for(int l=0;l<input->get_rows();l++)
+        {
+            Matrix x=input->get_row(l);
+            Matrix y=output->get_row(l);
 
             xr->a[0]=x;
             forward_xr();
+
+            xr->da[layers-2].matrix_at(0,0)=2.0f * (xr->a[layers-1].matrix_at(0, 0) - y.matrix_at(0, 0));
    
-            da[1].matrix_at(0,0)=2.0f * (xr->a[2].matrix_at(0, 0) - y.matrix_at(0, 0));
-
-            Matrix a1_transpose=return_transpose(xr->a[1]);
-            Matrix dw1_sample = a1_transpose * da[1];
-            Matrix db1_sample = da[1];
-
-            Matrix w1_transpose=return_transpose(xr->w[1]);
-            Matrix da1_pre = da[1] * w1_transpose;
-
-            for(int j=0;j<2;j++)
+            for(int layer=layers-2;layer>=0;layer--)
             {
-                float sigmoid_value=xr->a[1].matrix_at(0,j);
-                float sigmoid_deriv= sigmoid_value*(1.0f-sigmoid_value);
-                da[0].matrix_at(0,j)=da1_pre.matrix_at(0,j)*sigmoid_deriv;
+                Matrix prev_transpose=return_transpose(xr->a[layer]);
+                Matrix prev_w_sample = prev_transpose * xr->da[layer];
+                Matrix prev_b_sample = xr->da[layer];
+
+                xr->dw[layer]=xr->dw[layer]+prev_w_sample;
+                xr->db[layer]=xr->db[layer]+prev_b_sample;
+
+                if(layer>0)
+                {
+                  Matrix w_transpose=return_transpose(xr->w[layer]);
+                  Matrix da_prev = xr->da[layer] * w_transpose;
+
+                  for(int j=0;j<xr->a[layer].get_cols();j++)
+                  {
+                    double sigmoid_deriv=xr->a[layer].matrix_at(0,j)*(1.0f - xr->a[layer].matrix_at(0,j));
+                    xr->da[layer-1].matrix_at(0,j) = da_prev.matrix_at(0,j)*sigmoid_deriv;
+                   }
+                }
             }
-
-            Matrix a0_transpose=return_transpose(xr->a[0]);
-            Matrix dw0_sample = a0_transpose * da[0];
-            Matrix db0_sample = da[0];
-
-
-            dw[1] = dw[1] + dw1_sample;
-            db[1] = db[1] + db1_sample;
-            dw[0] = dw[0] + dw0_sample;
-            db[0] = db[0] + db0_sample;
-
 
         int num_samples = input->get_rows();
-        for(int i = 0; i < 2; i++) {
-            for(int j = 0; j < 2; j++) {
-                if(i < dw[0].get_rows() && j < dw[0].get_cols()) {
-                    dw[0].matrix_at(i,j) /= num_samples;
-                }
+        for(int l=0;l<layers-1;l++)
+        {   
+            for(int k = 0; k < xr->dw[l].get_rows(); k++) 
+            {
+            for(int j = 0; j < xr->dw[l].get_cols(); j++) 
+            {
+                xr->dw[l].matrix_at(k,j) /= num_samples;
             }
+        }
         }
         
-        for(int i = 0; i < 2; i++) {
-            for(int j = 0; j < 1; j++) {
-                if(i < dw[1].get_rows() && j < dw[1].get_cols()) {
-                    dw[1].matrix_at(i,j) /= num_samples;
-                }
-            }
-        }
         
-        for(int i = 0; i < 1; i++) {
-            for(int j = 0; j < 2; j++) {
-                if(i < db[0].get_rows() && j < db[0].get_cols()) {
-                    db[0].matrix_at(i,j)/= num_samples;
-                }
+        for(int l=0;l<layers-1;l++)
+        {
+          for(int k = 0; k < xr->db[l].get_rows(); k++)
+          {
+            for(int j=0; j<xr->db[l].get_cols();j++)
+            {
+               xr->db[l].matrix_at(k,j)/= num_samples;
             }
-        }
+          }
+        } 
         
-        for(int i = 0; i < 1; i++) {
-            for(int j = 0; j < 1; j++) {
-                if(i < db[1].get_rows() && j < db[1].get_cols()) {
-                    db[1].matrix_at(i,j) /= num_samples;
-                }
-            }
-        }
+       
         
         // Update weights and biases using gradient descent
         // w = w - learning_rate * dw
         // b = b - learning_rate * db
         
-        for(int i = 0; i < 2; i++) {
-            for(int j = 0; j < 2; j++) {
-                xr->w[0].matrix_at(i,j) -= learn_rate * dw[0].matrix_at(i,j);
+
+        for(int l=0;l<layers-1;l++)
+        {
+          for(int k = 0; k < xr->b[l].get_rows(); k++)
+          {
+            for(int j=0; j<xr->b[l].get_cols();j++)
+            {
+               xr->b[l].matrix_at(k,j) -= learn_rate * xr->db[l].matrix_at(k,j);
             }
-        }
+          }
+        } 
+
+        for(int l=0;l<layers-1;l++)
+        {
+          for(int k = 0; k < xr->w[l].get_rows(); k++)
+          {
+            for(int j=0; j<xr->w[l].get_cols();j++)
+            {
+               xr->w[l].matrix_at(k,j) -= learn_rate * xr->dw[l].matrix_at(k,j);
+            }
+          }
+        } 
         
-        for(int i = 0; i < 2; i++) {
-            for(int j = 0; j < 1; j++) {
-                xr->w[1].matrix_at(i,j) -= learn_rate * dw[1].matrix_at(i,j);
-            }
-        }
-        
-        for(int i = 0; i < 1; i++) {
-            for(int j = 0; j < 2; j++) {
-                xr->b[0].matrix_at(i,j) -= learn_rate * db[0].matrix_at(i,j);
-            }
-        }
-        
-        for(int i = 0; i < 1; i++) {
-            for(int j = 0; j < 1; j++) {
-                xr->b[1].matrix_at(i,j) -= learn_rate * db[1].matrix_at(i,j);
-            }
-        }
-        }
+    }
     }
 }
 
@@ -328,6 +333,9 @@ Weights::Weights(int layers,int size[],int l)
     a=new Matrix[layers];
     w=new Matrix[layers-1];
     b=new Matrix[layers-1];
+    dw=new Matrix [layers-1];
+    db=new Matrix [layers-1];
+    da=new  Matrix [layers-1];
 
     for(int i=0;i<layers;i++)
     {
@@ -337,9 +345,10 @@ Weights::Weights(int layers,int size[],int l)
     for(int i=0;i<layers-1;i++)
     {
         w[i]=Matrix(sizes[i],sizes[i+1]);
-        w[i].init_rand(0,1);
-        b[i]=Matrix(1,sizes[i+1]);
-        b[i].init_rand(0,1);
+        b[i]=Matrix(1,size[i+1]);
+        dw[i]=Matrix(sizes[i],sizes[i+1]);
+        db[i]=Matrix(1,sizes[i+1]);
+        da[i]=Matrix(1,sizes[i+1]);
     }
 
     // a[0]=Matrix(1,2);
@@ -362,6 +371,9 @@ Weights::~Weights()
     delete []a;
     delete []b;
     delete []w;
+    delete []db;
+    delete []dw;
+    delete []da;
     delete []sizes;
 }
 
@@ -379,7 +391,7 @@ float NeuralNetwork::cost()
         forward_xr();
         for(int j=0;j<output->get_cols();j++)
         {
-            float d=xr->a[2].matrix_at(0,j)-y.matrix_at(0,j);
+            float d=xr->a[layers-1].matrix_at(0,j)-y.matrix_at(0,j);
             cost+=d*d;
         }
     }
@@ -388,13 +400,13 @@ float NeuralNetwork::cost()
 
 Matrix NeuralNetwork::get_output()
 {
-   Matrix result(4,1);
+   Matrix result(output->get_rows(),output->get_cols());
    for(int i=0;i<input->get_rows();i++)
    {
     Matrix input_row=input->get_row(i);
     xr->a[0]=input_row;
     forward_xr();
-    result.matrix_at(i,0)=xr->a[2].matrix_at(0,0);
+    result.matrix_at(i,0)=xr->a[layers-1].matrix_at(0,0);
    }
    return result;
 }
