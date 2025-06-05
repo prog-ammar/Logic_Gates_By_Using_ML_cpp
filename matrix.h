@@ -21,7 +21,8 @@ class Matrix
     int get_cols() const;
     Matrix get_row(int i);
     void sigmoid();
-    double matrix_at(int i,int j);
+    double& matrix_at(int i,int j);
+    friend Matrix return_transpose(Matrix& x);
     friend ostream& operator<<(ostream& output,const Matrix& matrix);
     friend Matrix operator+(const Matrix& m1,const Matrix& m2);
     friend Matrix operator*(const Matrix& m1,const Matrix& m2);
@@ -48,5 +49,7 @@ class NeuralNetwork
     public:
     NeuralNetwork(int layers,Matrix input,Matrix output);
     float cost(Xor& xr);
+    void train(Xor& xr);
+    Matrix get_output(Xor& xr);
     ~NeuralNetwork();
 };
